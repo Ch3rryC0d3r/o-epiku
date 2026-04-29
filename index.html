@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base href="./">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lipu sona pona</title>
+
+<style>
+body {
+    margin: 0;
+    background: #f5f5f5;
+    color: #111;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.card {
+    width: 80%;
+    max-width: 650px;
+    height: 460px;
+    background: white;
+    border-radius: 18px;
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: center;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.word {
+    font-size: 44px;
+    font-weight: bold;
+}
+
+.img-box {
+    height: 220px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+img {
+    max-height: 200px;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+.back {
+    font-size: 18px;
+    min-height: 40px;
+    opacity: 0.9;
+}
+
+/* buttons */
+button {
+    margin: 5px;
+    padding: 10px 14px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: 0.15s ease;
+}
+
+.flip-btn {
+    background: #444;
+    color: white;
+}
+
+.flip-btn:hover {
+    background: #666;
+}
+
+.wrong-btn {
+    background: #ff4d4d;
+    color: white;
+}
+
+.wrong-btn:hover {
+    background: #e60000;
+}
+
+.right-btn {
+    background: #2ecc71;
+    color: white;
+}
+
+.right-btn:hover {
+    background: #1e9e55;
+}
+
+.small {
+    font-size: 12px;
+    opacity: 0.6;
+}
+
+/* POPUP OVERLAY */
+#resultPopup {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.popupBox {
+    background: white;
+    padding: 30px;
+    border-radius: 18px;
+    width: 300px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+}
+
+.gradeBig {
+    font-size: 64px;
+    font-weight: 800;
+    margin-bottom: 10px;
+}
+
+.popupStats {
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.top-left {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    z-index: 999;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+    <div class="word" id="front">loading...</div>
+
+    <div class="img-box">
+        <img id="img" style="display:none">
+    </div>
+
+    <div class="back" id="back"></div>
+
+    <!-- CONTROLS -->
+    <div style="display:flex; flex-direction:column; gap:10px; align-items:center;">
+
+		<button id="startBtn" class="flip-btn top-left" onclick="toggleSession()">
+			start
+		</button>
+
+        <button class="flip-btn" onclick="flip()">
+            flip
+        </button>
+
+        <div id="gradeButtons" style="display:none; display:flex; gap:10px;">
+            <button class="wrong-btn" onclick="grade(false)">wrong</button>
+            <button class="right-btn" onclick="grade(true)">right</button>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+/* =========================
+   DECK
+   ========================= */
+
+let deck = [
+{f:"akesi", b:"lizard, reptile"},
+{f:"ala", b:"no, not, nothing, zero"},
+{f:"alasa", b:"hunt, gather, search, try"},
+{f:"ale", b:"all, everything, infinite"},
+{f:"anpa", b:"down, low, below, defeat"},
+{f:"ante", b:"different, change, other"},
+{f:"awen", b:"stay, keep, wait, continue"},
+{f:"esun", b:"trade, buy/sell, exchange"},
+{f:"ijo", b:"thing, stuff"},
+{f:"ike", b:"bad, evil, unnecessary"},
+{f:"ilo", b:"tool, device"},
+{f:"insa", b:"inside, center"},
+{f:"jaki", b:"dirty, gross"},
+{f:"jan", b:"person, human"},
+{f:"jelo", b:"yellow"},
+{f:"jo", b:"have, hold"},
+{f:"kala", b:"fish, sea creature"},
+{f:"kalama", b:"sound, noise"},
+{f:"kama", b:"come, become, event"},
+{f:"kasi", b:"plant"},
+{f:"ken", b:"can, possible"},
+{f:"kepeken", b:"use, using"},
+{f:"kili", b:"fruit, vegetable, mushroom"},
+{f:"kiwen", b:"hard thing, rock, metal"},
+{f:"ko", b:"paste, powder"},
+{f:"kon", b:"air, spirit"},
+{f:"kule", b:"color"},
+{f:"kulupu", b:"group, community"},
+{f:"kute", b:"hear, listen"},
+{f:"lape", b:"sleep, rest"},
+{f:"laso", b:"blue, green"},
+{f:"lawa", b:"head, control, lead"},
+{f:"len", b:"clothes, cover"},
+{f:"lete", b:"cold"},
+{f:"lili", b:"small"},
+{f:"linja", b:"line, rope, hair"},
+{f:"lipu", b:"paper, book, page"},
+{f:"loje", b:"red"},
+{f:"lon", b:"real, exist, at/in/on"},
+{f:"luka", b:"hand, arm, five"},
+{f:"lukin", b:"see, look, read"},
+{f:"lupa", b:"hole, door"},
+{f:"ma", b:"land, place"},
+{f:"mama", b:"parent, creator"},
+{f:"mani", b:"money, livestock"},
+{f:"meli", b:"woman"},
+{f:"mi", b:"I, we"},
+{f:"mije", b:"man"},
+{f:"moku", b:"eat, food"},
+{f:"moli", b:"death, kill"},
+{f:"monsi", b:"back, behind"},
+{f:"mun", b:"moon, star"},
+{f:"musi", b:"fun, play, art"},
+{f:"mute", b:"many, a lot"},
+{f:"nanpa", b:"number"},
+{f:"nasa", b:"weird, drunk"},
+{f:"nasin", b:"way, path"},
+{f:"nena", b:"bump, hill, nose"},
+{f:"ni", b:"this, that"},
+{f:"nimi", b:"word, name"},
+{f:"noka", b:"leg, foot, bottom"},
+{f:"olin", b:"love"},
+{f:"ona", b:"they, it"},
+{f:"open", b:"start, open"},
+{f:"pakala", b:"break, mistake"},
+{f:"pali", b:"work, make"},
+{f:"palisa", b:"stick, long thing"},
+{f:"pan", b:"bread, grain"},
+{f:"pana", b:"give, send"},
+{f:"pilin", b:"feel, think"},
+{f:"pimeja", b:"black, dark"},
+{f:"pini", b:"end, finish"},
+{f:"pipi", b:"bug"},
+{f:"poka", b:"side, nearby"},
+{f:"poki", b:"container, box"},
+{f:"pona", b:"good, simple"},
+{f:"sama", b:"same, like"},
+{f:"seli", b:"heat"},
+{f:"selo", b:"outer layer, skin"},
+{f:"sewi", b:"above, sky"},
+{f:"sijelo", b:"body"},
+{f:"sike", b:"circle, cycle"},
+{f:"sin", b:"new, additional"},
+{f:"sina", b:"you"},
+{f:"sinpin", b:"front, face"},
+{f:"sitelen", b:"write, draw"},
+{f:"sona", b:"know"},
+{f:"soweli", b:"animal"},
+{f:"suli", b:"big"},
+{f:"suno", b:"sun, light"},
+{f:"supa", b:"surface"},
+{f:"suwi", b:"sweet, cute"},
+{f:"tan", b:"from, because"},
+{f:"tawa", b:"move, to"},
+{f:"telo", b:"water, liquid"},
+{f:"tenpo", b:"time"},
+{f:"toki", b:"speak, language"},
+{f:"tomo", b:"house, building"},
+{f:"tu", b:"two, divide"},
+{f:"unpa", b:"sex"},
+{f:"uta", b:"mouth"},
+{f:"utala", b:"fight"},
+{f:"walo", b:"white"},
+{f:"wan", b:"one, unite"},
+{f:"waso", b:"bird"},
+{f:"wawa", b:"strong, energy"},
+{f:"weka", b:"away, remove"},
+{f:"wile", b:"want, need"}
+];
+
+/* =========================
+   STATE
+   ========================= */
+
+let current = null;
+let session = false;
+let right = 0;
+let wrong = 0;
+let total = 0;
+
+/* =========================
+   SESSION
+   ========================= */
+
+function toggleSession(){
+    session = !session;
+
+    let btn = document.getElementById("startBtn");
+
+    if (session){
+        btn.innerText = "stop";
+        resetStats();
+        pick();
+	} else {
+		btn.innerText = "start";
+		clearCard();
+		showPopup();
+		confetti();
+	}
+}
+
+function showPopup(){
+    let acc = total === 0 ? 0 : Math.round((right / total) * 100);
+
+    let grade = "-";
+    if (acc >= 95) grade = "A+";
+    else if (acc >= 85) grade = "A";
+    else if (acc >= 70) grade = "B";
+    else if (acc > 0) grade = "C";
+
+    document.getElementById("finalGrade").innerText = grade;
+    document.getElementById("finalAcc").innerText = acc + "%";
+    document.getElementById("finalRight").innerText = right;
+    document.getElementById("finalWrong").innerText = wrong;
+    document.getElementById("finalTotal").innerText = total;
+
+    document.getElementById("resultPopup").style.display = "flex";
+}
+
+function closePopup(){
+    document.getElementById("resultPopup").style.display = "none";
+}
+
+function resetStats(){
+    right = 0;
+    wrong = 0;
+    total = 0;
+}
+
+function showGrade(){
+    let acc = total === 0 ? 0 : (right / total) * 100;
+
+    let g = "-";
+
+    if (acc >= 95) g = "A+";
+    else if (acc >= 85) g = "A";
+    else if (acc >= 70) g = "B";
+    else if (acc > 0) g = "C";
+
+    document.getElementById("gradeLabel").innerText = g;
+}
+
+/* =========================
+   CARDS
+   ========================= */
+
+function pick(){
+    if (!session){
+        clearCard();
+        return;
+    }
+
+    current = deck[Math.floor(Math.random() * deck.length)];
+    render();
+}
+
+function render(){
+    if (!current) return;
+
+    document.getElementById("front").innerText = current.f;
+
+    let img = document.getElementById("img");
+    img.src = "./index_files/" + current.f + ".png";
+    img.style.display = "block";
+
+    document.getElementById("back").innerText = "";
+    document.getElementById("gradeButtons").style.display = "none";
+}
+
+function flip(){
+    if (!current) return;
+
+    document.getElementById("back").innerText = current.b;
+    document.getElementById("gradeButtons").style.display = "flex";
+}
+
+/* =========================
+   GRADING
+   ========================= */
+
+function grade(correct){
+    if (!current || !session) return;
+
+    if (correct) right++;
+    else wrong++;
+
+    total++;
+
+    let idx = deck.indexOf(current);
+    deck.splice(idx, 1);
+
+    if (correct) deck.push(current);
+    else deck.unshift(current);
+
+    pick();
+}
+
+/* =========================
+   CONTROLS
+   ========================= */
+
+document.addEventListener("keydown", e=>{
+    if(e.code === "Space") flip();
+    if(e.code === "ArrowLeft") grade(false);
+    if(e.code === "ArrowRight") grade(true);
+});
+
+/* START */
+pick();
+
+function confetti(){
+    for(let i=0;i<30;i++){
+        let c = document.createElement("div");
+        c.style.position = "fixed";
+        c.style.left = Math.random()*100 + "vw";
+        c.style.top = "-10px";
+        c.style.width = "6px";
+        c.style.height = "6px";
+        c.style.background = ["#2ecc71","#f1c40f","#3498db","#e74c3c"][Math.floor(Math.random()*4)];
+        c.style.zIndex = 99999;
+        c.style.borderRadius = "50%";
+        document.body.appendChild(c);
+
+        let fall = setInterval(()=>{
+            let top = parseFloat(c.style.top);
+            c.style.top = top + 5 + "px";
+
+            if(top > window.innerHeight){
+                clearInterval(fall);
+                c.remove();
+            }
+        }, 16);
+    }
+}
+
+function clearCard(){
+    document.getElementById("front").innerText = "";
+    document.getElementById("back").innerText = "";
+
+    let img = document.getElementById("img");
+    img.style.display = "none";
+    img.src = "";
+
+    document.getElementById("gradeButtons").style.display = "none";
+}
+</script>
+
+<!-- POPUP -->
+<div id="resultPopup" style="display:none;">
+    <div class="popupBox">
+        <div class="gradeBig" id="finalGrade">A</div>
+
+        <div class="popupStats">
+            Accuracy: <span id="finalAcc">0%</span><br>
+            Right: <span id="finalRight">0</span> |
+            Wrong: <span id="finalWrong">0</span> |
+            Total: <span id="finalTotal">0</span>
+        </div>
+
+        <button onclick="closePopup()" class="flip-btn" style="margin-top:15px;">
+            close
+        </button>
+    </div>
+</div>
+
+</body>
+</html>
