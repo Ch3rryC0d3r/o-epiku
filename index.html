@@ -4,7 +4,7 @@
 <base href="./">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>lipu sona pona</title>
+<title>o epiku</title>
 
 <style>
 body {
@@ -18,18 +18,56 @@ body {
     height: 100vh;
 }
 
-.card {
+.card-scene {
     width: 80%;
     max-width: 650px;
     height: 460px;
+    perspective: 1000px;
+}
+
+.card {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.6s ease;
+}
+
+.card.flipped {
+    transform: rotateY(180deg);
+}
+
+.card-face {
+    position: absolute;
+	backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform: translateZ(0);
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
     background: white;
     border-radius: 18px;
     padding: 25px;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
+    align-items: center;
     justify-content: space-between;
     text-align: center;
     box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.card:not(.flipped) .card-back-face {
+    visibility: hidden;
+}
+
+.card.flipped .card-back-face {
+    visibility: visible;
+}
+
+.card-back-face {
+    transform: rotateY(180deg);
 }
 
 .word {
@@ -50,13 +88,12 @@ img {
     object-fit: contain;
 }
 
-.back {
-    font-size: 18px;
-    min-height: 40px;
-    opacity: 0.9;
+.back-def {
+    font-size: 28px;
+    font-weight: 700;
+    text-align: center;
 }
 
-/* buttons */
 button {
     margin: 5px;
     padding: 10px 14px;
@@ -68,8 +105,31 @@ button {
 }
 
 .flip-btn {
-    background: #444;
+    padding: 14px 22px;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 700;
+    transition: 0.2s ease;
+}
+
+.start-state {
+    background: #2ecc71;
     color: white;
+}
+
+.start-state:hover {
+    background: #1e9e55;
+}
+
+.stop-state {
+    background: #e74c3c;
+    color: white;
+}
+
+.stop-state:hover {
+    background: #c0392b;
 }
 
 .flip-btn:hover {
@@ -94,12 +154,13 @@ button {
     background: #1e9e55;
 }
 
-.small {
-    font-size: 12px;
-    opacity: 0.6;
+.top-left {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 9999;
 }
 
-/* POPUP OVERLAY */
 #resultPopup {
     position: fixed;
     inset: 0;
@@ -130,45 +191,77 @@ button {
     line-height: 1.5;
 }
 
-.top-left {
-    position: absolute;
-    top: 15px;
-    left: 15px;
-    z-index: 999;
+.bad .card-back-face {
+    animation: shakeRed 0.4s ease;
+}
+
+@keyframes shakeRed {
+    0%   { transform: rotateY(180deg) translateX(0);    background: white; }
+    20%  { transform: rotateY(180deg) translateX(-10px); background: #ffcccc; }
+    40%  { transform: rotateY(180deg) translateX(10px); }
+    60%  { transform: rotateY(180deg) translateX(-6px); }
+    80%  { transform: rotateY(180deg) translateX(6px); }
+    100% { transform: rotateY(180deg) translateX(0);    background: white; }
+}
+
+.good .card-back-face {
+    animation: popGreen 0.4s ease;
+}
+
+@keyframes popGreen {
+    0%   { transform: rotateY(180deg) translateY(0);     background: white; }
+    30%  { transform: rotateY(180deg) translateY(-10px); background: #ccffdd; }
+    60%  { transform: rotateY(180deg) translateY(5px); }
+    100% { transform: rotateY(180deg) translateY(0);     background: white; }
 }
 </style>
 </head>
 
 <body>
 
-<div class="card">
+<button id="startBtn" class="flip-btn top-left start-state" onclick="toggleSession()">start</button>
 
-    <div class="word" id="front">loading...</div>
+<div class="card-scene">
+    <div class="card" id="card">
 
-    <div class="img-box">
-        <img id="img" style="display:none">
-    </div>
+        <!-- FRONT: toki pona word + image -->
+        <div class="card-face card-front-face">
+            <div class="word" id="front">loading...</div>
+            <div class="img-box">
+                <img id="imgFront" style="display:none">
+            </div>
+            <div style="display:flex; flex-direction:column; gap:10px; align-items:center;">
+                <button id="flipBtn" class="flip-btn" onclick="flip()" style="display:none;">flip</button>
+            </div>
+        </div>
 
-    <div class="back" id="back"></div>
-
-    <!-- CONTROLS -->
-    <div style="display:flex; flex-direction:column; gap:10px; align-items:center;">
-
-		<button id="startBtn" class="flip-btn top-left" onclick="toggleSession()">
-			start
-		</button>
-
-        <button class="flip-btn" onclick="flip()">
-            flip
-        </button>
-
-        <div id="gradeButtons" style="display:none; display:flex; gap:10px;">
-            <button class="wrong-btn" onclick="grade(false)">wrong</button>
-            <button class="right-btn" onclick="grade(true)">right</button>
+        <!-- BACK: english definition + image -->
+        <div class="card-face card-back-face">
+            <div class="back-def" id="back-def"></div>
+            <div class="img-box">
+                <img id="imgBack" style="display:none">
+            </div>
+            <div id="gradeButtons" style="display:none; display:flex; gap:10px;">
+                <button class="wrong-btn" onclick="grade(false)">wrong</button>
+                <button class="right-btn" onclick="grade(true)">right</button>
+            </div>
         </div>
 
     </div>
+</div>
 
+<!-- POPUP -->
+<div id="resultPopup" style="display:none;">
+    <div class="popupBox">
+        <div class="gradeBig" id="finalGrade">A</div>
+        <div class="popupStats">
+            Accuracy: <span id="finalAcc">0%</span><br>
+            Right: <span id="finalRight">0</span> |
+            Wrong: <span id="finalWrong">0</span> |
+            Total: <span id="finalTotal">0</span>
+        </div>
+        <button onclick="closePopup()" class="flip-btn" style="margin-top:15px;">close</button>
+    </div>
 </div>
 
 <script>
@@ -178,113 +271,113 @@ button {
    ========================= */
 
 let deck = [
-{f:"akesi", b:"lizard, reptile"},
-{f:"ala", b:"no, not, nothing, zero"},
-{f:"alasa", b:"hunt, gather, search, try"},
-{f:"ale", b:"all, everything, infinite"},
-{f:"anpa", b:"down, low, below, defeat"},
-{f:"ante", b:"different, change, other"},
-{f:"awen", b:"stay, keep, wait, continue"},
-{f:"esun", b:"trade, buy/sell, exchange"},
-{f:"ijo", b:"thing, stuff"},
-{f:"ike", b:"bad, evil, unnecessary"},
-{f:"ilo", b:"tool, device"},
-{f:"insa", b:"inside, center"},
-{f:"jaki", b:"dirty, gross"},
-{f:"jan", b:"person, human"},
-{f:"jelo", b:"yellow"},
-{f:"jo", b:"have, hold"},
-{f:"kala", b:"fish, sea creature"},
-{f:"kalama", b:"sound, noise"},
-{f:"kama", b:"come, become, event"},
-{f:"kasi", b:"plant"},
-{f:"ken", b:"can, possible"},
-{f:"kepeken", b:"use, using"},
-{f:"kili", b:"fruit, vegetable, mushroom"},
-{f:"kiwen", b:"hard thing, rock, metal"},
-{f:"ko", b:"paste, powder"},
-{f:"kon", b:"air, spirit"},
-{f:"kule", b:"color"},
-{f:"kulupu", b:"group, community"},
-{f:"kute", b:"hear, listen"},
-{f:"lape", b:"sleep, rest"},
-{f:"laso", b:"blue, green"},
-{f:"lawa", b:"head, control, lead"},
-{f:"len", b:"clothes, cover"},
-{f:"lete", b:"cold"},
-{f:"lili", b:"small"},
-{f:"linja", b:"line, rope, hair"},
-{f:"lipu", b:"paper, book, page"},
-{f:"loje", b:"red"},
-{f:"lon", b:"real, exist, at/in/on"},
-{f:"luka", b:"hand, arm, five"},
-{f:"lukin", b:"see, look, read"},
-{f:"lupa", b:"hole, door"},
-{f:"ma", b:"land, place"},
-{f:"mama", b:"parent, creator"},
-{f:"mani", b:"money, livestock"},
-{f:"meli", b:"woman"},
-{f:"mi", b:"I, we"},
-{f:"mije", b:"man"},
-{f:"moku", b:"eat, food"},
-{f:"moli", b:"death, kill"},
-{f:"monsi", b:"back, behind"},
-{f:"mun", b:"moon, star"},
-{f:"musi", b:"fun, play, art"},
-{f:"mute", b:"many, a lot"},
-{f:"nanpa", b:"number"},
-{f:"nasa", b:"weird, drunk"},
-{f:"nasin", b:"way, path"},
-{f:"nena", b:"bump, hill, nose"},
-{f:"ni", b:"this, that"},
-{f:"nimi", b:"word, name"},
-{f:"noka", b:"leg, foot, bottom"},
-{f:"olin", b:"love"},
-{f:"ona", b:"they, it"},
-{f:"open", b:"start, open"},
-{f:"pakala", b:"break, mistake"},
-{f:"pali", b:"work, make"},
-{f:"palisa", b:"stick, long thing"},
-{f:"pan", b:"bread, grain"},
-{f:"pana", b:"give, send"},
-{f:"pilin", b:"feel, think"},
-{f:"pimeja", b:"black, dark"},
-{f:"pini", b:"end, finish"},
-{f:"pipi", b:"bug"},
-{f:"poka", b:"side, nearby"},
-{f:"poki", b:"container, box"},
-{f:"pona", b:"good, simple"},
-{f:"sama", b:"same, like"},
-{f:"seli", b:"heat"},
-{f:"selo", b:"outer layer, skin"},
-{f:"sewi", b:"above, sky"},
-{f:"sijelo", b:"body"},
-{f:"sike", b:"circle, cycle"},
-{f:"sin", b:"new, additional"},
-{f:"sina", b:"you"},
-{f:"sinpin", b:"front, face"},
-{f:"sitelen", b:"write, draw"},
-{f:"sona", b:"know"},
-{f:"soweli", b:"animal"},
-{f:"suli", b:"big"},
-{f:"suno", b:"sun, light"},
-{f:"supa", b:"surface"},
-{f:"suwi", b:"sweet, cute"},
-{f:"tan", b:"from, because"},
-{f:"tawa", b:"move, to"},
-{f:"telo", b:"water, liquid"},
-{f:"tenpo", b:"time"},
-{f:"toki", b:"speak, language"},
-{f:"tomo", b:"house, building"},
-{f:"tu", b:"two, divide"},
-{f:"unpa", b:"sex"},
-{f:"uta", b:"mouth"},
-{f:"utala", b:"fight"},
-{f:"walo", b:"white"},
-{f:"wan", b:"one, unite"},
-{f:"waso", b:"bird"},
-{f:"wawa", b:"strong, energy"},
-{f:"weka", b:"away, remove"},
+{f:"akesi", b:"lizard, reptile", interval: 0, ease: 2.5, due: 0},
+{f:"ala", b:"no, not, nothing, zero", interval: 0, ease: 2.5, due: 0},
+{f:"alasa", b:"hunt, gather, search, try", interval: 0, ease: 2.5, due: 0},
+{f:"ale", b:"all, everything, infinite", interval: 0, ease: 2.5, due: 0},
+{f:"anpa", b:"down, low, below, defeat", interval: 0, ease: 2.5, due: 0},
+{f:"ante", b:"different, change, other", interval: 0, ease: 2.5, due: 0},
+{f:"awen", b:"stay, keep, wait, continue", interval: 0, ease: 2.5, due: 0},
+{f:"esun", b:"trade, buy/sell, exchange", interval: 0, ease: 2.5, due: 0},
+{f:"ijo", b:"thing, stuff", interval: 0, ease: 2.5, due: 0},
+{f:"ike", b:"bad, evil, unnecessary", interval: 0, ease: 2.5, due: 0},
+{f:"ilo", b:"tool, device", interval: 0, ease: 2.5, due: 0},
+{f:"insa", b:"inside, center", interval: 0, ease: 2.5, due: 0},
+{f:"jaki", b:"dirty, gross", interval: 0, ease: 2.5, due: 0},
+{f:"jan", b:"person, human", interval: 0, ease: 2.5, due: 0},
+{f:"jelo", b:"yellow", interval: 0, ease: 2.5, due: 0},
+{f:"jo", b:"have, hold", interval: 0, ease: 2.5, due: 0},
+{f:"kala", b:"fish, sea creature", interval: 0, ease: 2.5, due: 0},
+{f:"kalama", b:"sound, noise", interval: 0, ease: 2.5, due: 0},
+{f:"kama", b:"come, become, event", interval: 0, ease: 2.5, due: 0},
+{f:"kasi", b:"plant", interval: 0, ease: 2.5, due: 0},
+{f:"ken", b:"can, possible", interval: 0, ease: 2.5, due: 0},
+{f:"kepeken", b:"use, using", interval: 0, ease: 2.5, due: 0},
+{f:"kili", b:"fruit, vegetable, mushroom", interval: 0, ease: 2.5, due: 0},
+{f:"kiwen", b:"hard thing, rock, metal", interval: 0, ease: 2.5, due: 0},
+{f:"ko", b:"paste, powder", interval: 0, ease: 2.5, due: 0},
+{f:"kon", b:"air, spirit", interval: 0, ease: 2.5, due: 0},
+{f:"kule", b:"color", interval: 0, ease: 2.5, due: 0},
+{f:"kulupu", b:"group, community", interval: 0, ease: 2.5, due: 0},
+{f:"kute", b:"hear, listen", interval: 0, ease: 2.5, due: 0},
+{f:"lape", b:"sleep, rest", interval: 0, ease: 2.5, due: 0},
+{f:"laso", b:"blue, green", interval: 0, ease: 2.5, due: 0},
+{f:"lawa", b:"head, control, lead", interval: 0, ease: 2.5, due: 0},
+{f:"len", b:"clothes, cover", interval: 0, ease: 2.5, due: 0},
+{f:"lete", b:"cold", interval: 0, ease: 2.5, due: 0},
+{f:"lili", b:"small", interval: 0, ease: 2.5, due: 0},
+{f:"linja", b:"line, rope, hair", interval: 0, ease: 2.5, due: 0},
+{f:"lipu", b:"paper, book, page", interval: 0, ease: 2.5, due: 0},
+{f:"loje", b:"red", interval: 0, ease: 2.5, due: 0},
+{f:"lon", b:"real, exist, at/in/on", interval: 0, ease: 2.5, due: 0},
+{f:"luka", b:"hand, arm, five", interval: 0, ease: 2.5, due: 0},
+{f:"lukin", b:"see, look, read", interval: 0, ease: 2.5, due: 0},
+{f:"lupa", b:"hole, door", interval: 0, ease: 2.5, due: 0},
+{f:"ma", b:"land, place", interval: 0, ease: 2.5, due: 0},
+{f:"mama", b:"parent, creator", interval: 0, ease: 2.5, due: 0},
+{f:"mani", b:"money, livestock", interval: 0, ease: 2.5, due: 0},
+{f:"meli", b:"woman", interval: 0, ease: 2.5, due: 0},
+{f:"mi", b:"I, we", interval: 0, ease: 2.5, due: 0},
+{f:"mije", b:"man", interval: 0, ease: 2.5, due: 0},
+{f:"moku", b:"eat, food", interval: 0, ease: 2.5, due: 0},
+{f:"moli", b:"death, kill", interval: 0, ease: 2.5, due: 0},
+{f:"monsi", b:"back, behind", interval: 0, ease: 2.5, due: 0},
+{f:"mun", b:"moon, star", interval: 0, ease: 2.5, due: 0},
+{f:"musi", b:"fun, play, art", interval: 0, ease: 2.5, due: 0},
+{f:"mute", b:"many, a lot", interval: 0, ease: 2.5, due: 0},
+{f:"nanpa", b:"number", interval: 0, ease: 2.5, due: 0},
+{f:"nasa", b:"weird, drunk", interval: 0, ease: 2.5, due: 0},
+{f:"nasin", b:"way, path", interval: 0, ease: 2.5, due: 0},
+{f:"nena", b:"bump, hill, nose", interval: 0, ease: 2.5, due: 0},
+{f:"ni", b:"this, that", interval: 0, ease: 2.5, due: 0},
+{f:"nimi", b:"word, name", interval: 0, ease: 2.5, due: 0},
+{f:"noka", b:"leg, foot, bottom", interval: 0, ease: 2.5, due: 0},
+{f:"olin", b:"love", interval: 0, ease: 2.5, due: 0},
+{f:"ona", b:"they, it", interval: 0, ease: 2.5, due: 0},
+{f:"open", b:"start, open", interval: 0, ease: 2.5, due: 0},
+{f:"pakala", b:"break, mistake", interval: 0, ease: 2.5, due: 0},
+{f:"pali", b:"work, make", interval: 0, ease: 2.5, due: 0},
+{f:"palisa", b:"stick, long thing", interval: 0, ease: 2.5, due: 0},
+{f:"pan", b:"bread, grain", interval: 0, ease: 2.5, due: 0},
+{f:"pana", b:"give, send", interval: 0, ease: 2.5, due: 0},
+{f:"pilin", b:"feel, think", interval: 0, ease: 2.5, due: 0},
+{f:"pimeja", b:"black, dark", interval: 0, ease: 2.5, due: 0},
+{f:"pini", b:"end, finish", interval: 0, ease: 2.5, due: 0},
+{f:"pipi", b:"bug", interval: 0, ease: 2.5, due: 0},
+{f:"poka", b:"side, nearby", interval: 0, ease: 2.5, due: 0},
+{f:"poki", b:"container, box", interval: 0, ease: 2.5, due: 0},
+{f:"pona", b:"good, simple", interval: 0, ease: 2.5, due: 0},
+{f:"sama", b:"same, like", interval: 0, ease: 2.5, due: 0},
+{f:"seli", b:"heat", interval: 0, ease: 2.5, due: 0},
+{f:"selo", b:"outer layer, skin", interval: 0, ease: 2.5, due: 0},
+{f:"sewi", b:"above, sky", interval: 0, ease: 2.5, due: 0},
+{f:"sijelo", b:"body", interval: 0, ease: 2.5, due: 0},
+{f:"sike", b:"circle, cycle", interval: 0, ease: 2.5, due: 0},
+{f:"sin", b:"new, additional", interval: 0, ease: 2.5, due: 0},
+{f:"sina", b:"you", interval: 0, ease: 2.5, due: 0},
+{f:"sinpin", b:"front, face", interval: 0, ease: 2.5, due: 0},
+{f:"sitelen", b:"write, draw", interval: 0, ease: 2.5, due: 0},
+{f:"sona", b:"know", interval: 0, ease: 2.5, due: 0},
+{f:"soweli", b:"animal", interval: 0, ease: 2.5, due: 0},
+{f:"suli", b:"big", interval: 0, ease: 2.5, due: 0},
+{f:"suno", b:"sun, light", interval: 0, ease: 2.5, due: 0},
+{f:"supa", b:"surface", interval: 0, ease: 2.5, due: 0},
+{f:"suwi", b:"sweet, cute", interval: 0, ease: 2.5, due: 0},
+{f:"tan", b:"from, because", interval: 0, ease: 2.5, due: 0},
+{f:"tawa", b:"move, to", interval: 0, ease: 2.5, due: 0},
+{f:"telo", b:"water, liquid", interval: 0, ease: 2.5, due: 0},
+{f:"tenpo", b:"time", interval: 0, ease: 2.5, due: 0},
+{f:"toki", b:"speak, language", interval: 0, ease: 2.5, due: 0},
+{f:"tomo", b:"house, building", interval: 0, ease: 2.5, due: 0},
+{f:"tu", b:"two, divide", interval: 0, ease: 2.5, due: 0},
+{f:"unpa", b:"sex", interval: 0, ease: 2.5, due: 0},
+{f:"uta", b:"mouth", interval: 0, ease: 2.5, due: 0},
+{f:"utala", b:"fight", interval: 0, ease: 2.5, due: 0},
+{f:"walo", b:"white", interval: 0, ease: 2.5, due: 0},
+{f:"wan", b:"one, unite", interval: 0, ease: 2.5, due: 0},
+{f:"waso", b:"bird", interval: 0, ease: 2.5, due: 0},
+{f:"wawa", b:"strong, energy", interval: 0, ease: 2.5, due: 0},
+{f:"weka", b:"away, remove", interval: 0, ease: 2.5, due: 0},
 {f:"wile", b:"want, need"}
 ];
 
@@ -304,15 +397,23 @@ let total = 0;
 
 function toggleSession(){
     session = !session;
-
     let btn = document.getElementById("startBtn");
+	if (session){
+		btn.innerText = "stop";
+		btn.classList.remove("start-state");
+		btn.classList.add("stop-state");
 
-    if (session){
-        btn.innerText = "stop";
-        resetStats();
-        pick();
+		document.getElementById("flipBtn").style.display = "block";
+
+		resetStats();
+		pick();
 	} else {
 		btn.innerText = "start";
+		btn.classList.remove("stop-state");
+		btn.classList.add("start-state");
+
+		document.getElementById("flipBtn").style.display = "none";
+
 		clearCard();
 		showPopup();
 		confetti();
@@ -321,7 +422,6 @@ function toggleSession(){
 
 function showPopup(){
     let acc = total === 0 ? 0 : Math.round((right / total) * 100);
-
     let grade = "-";
     if (acc >= 95) grade = "A+";
     else if (acc >= 85) grade = "A";
@@ -333,7 +433,6 @@ function showPopup(){
     document.getElementById("finalRight").innerText = right;
     document.getElementById("finalWrong").innerText = wrong;
     document.getElementById("finalTotal").innerText = total;
-
     document.getElementById("resultPopup").style.display = "flex";
 }
 
@@ -345,19 +444,14 @@ function resetStats(){
     right = 0;
     wrong = 0;
     total = 0;
-}
 
-function showGrade(){
-    let acc = total === 0 ? 0 : (right / total) * 100;
+    const now = Date.now();
 
-    let g = "-";
-
-    if (acc >= 95) g = "A+";
-    else if (acc >= 85) g = "A";
-    else if (acc >= 70) g = "B";
-    else if (acc > 0) g = "C";
-
-    document.getElementById("gradeLabel").innerText = g;
+    for (let c of deck){
+        c.interval = 0;
+        c.ease = 2.5;
+        c.due = now; // everything starts due immediately
+    }
 }
 
 /* =========================
@@ -365,32 +459,51 @@ function showGrade(){
    ========================= */
 
 function pick(){
-    if (!session){
+    if (!session) {
         clearCard();
         return;
     }
 
-    current = deck[Math.floor(Math.random() * deck.length)];
+    const now = Date.now();
+
+    let dueCards = deck.filter(c => c.due <= now);
+
+    if (dueCards.length === 0) {
+        // nothing due -> force next soonest card
+        dueCards = [...deck].sort((a,b) => a.due - b.due).slice(0, 1);
+    }
+
+    current = dueCards[Math.floor(Math.random() * dueCards.length)];
     render();
 }
 
 function render(){
     if (!current) return;
 
+    const card = document.getElementById("card");
+    document.getElementById("back-def").innerText = "";
+	document.getElementById("imgBack").style.display = "none";
+	document.getElementById("gradeButtons").style.display = "none";
+	card.classList.remove("flipped", "bad", "good");
+
     document.getElementById("front").innerText = current.f;
 
-    let img = document.getElementById("img");
-    img.src = "./index_files/" + current.f + ".png";
-    img.style.display = "block";
+    const imgFront = document.getElementById("imgFront");
+    imgFront.src = "./index_files/" + current.f + ".png";
+    imgFront.style.display = "block";
 
-    document.getElementById("back").innerText = "";
+    document.getElementById("back-def").innerText = current.b;
+
+    const imgBack = document.getElementById("imgBack");
+    imgBack.src = "./index_files/" + current.f + ".png";
+    imgBack.style.display = "block";
+
     document.getElementById("gradeButtons").style.display = "none";
 }
 
 function flip(){
     if (!current) return;
-
-    document.getElementById("back").innerText = current.b;
+    document.getElementById("card").classList.add("flipped");
     document.getElementById("gradeButtons").style.display = "flex";
 }
 
@@ -401,51 +514,69 @@ function flip(){
 function grade(correct){
     if (!current || !session) return;
 
-    if (correct) right++;
-    else wrong++;
+    const card = document.getElementById("card");
+
+    const now = Date.now();
+
+    if (correct){
+        right++;
+
+        current.ease = Math.min(current.ease + 0.1, 3.0);
+        current.interval = current.interval === 0 ? 1 : Math.round(current.interval * current.ease);
+
+        current.due = now + current.interval * 60 * 1000; // minutes for now (debug-friendly)
+
+        card.classList.remove("good");
+        void card.offsetWidth;
+        card.classList.add("good");
+
+    } else {
+        wrong++;
+
+        current.ease = Math.max(current.ease - 0.2, 1.3);
+        current.interval = 0;
+
+        current.due = now + 30 * 1000; // repeat soon (30 sec punishment loop)
+
+        card.classList.remove("bad");
+        void card.offsetWidth;
+        card.classList.add("bad");
+    }
 
     total++;
 
-    let idx = deck.indexOf(current);
-    deck.splice(idx, 1);
-
-    if (correct) deck.push(current);
-    else deck.unshift(current);
-
-    pick();
+    setTimeout(() => pick(), 420);
 }
 
 /* =========================
    CONTROLS
    ========================= */
 
-document.addEventListener("keydown", e=>{
-    if(e.code === "Space") flip();
-    if(e.code === "ArrowLeft") grade(false);
-    if(e.code === "ArrowRight") grade(true);
+document.addEventListener("keydown", e => {
+    if (e.code === "Space") flip();
+    if (e.code === "ArrowLeft") grade(false);
+    if (e.code === "ArrowRight") grade(true);
 });
 
-/* START */
 pick();
 
 function confetti(){
-    for(let i=0;i<30;i++){
+    for(let i = 0; i < 30; i++){
         let c = document.createElement("div");
         c.style.position = "fixed";
-        c.style.left = Math.random()*100 + "vw";
+        c.style.left = Math.random() * 100 + "vw";
         c.style.top = "-10px";
         c.style.width = "6px";
         c.style.height = "6px";
-        c.style.background = ["#2ecc71","#f1c40f","#3498db","#e74c3c"][Math.floor(Math.random()*4)];
+        c.style.background = ["#2ecc71","#f1c40f","#3498db","#e74c3c"][Math.floor(Math.random() * 4)];
         c.style.zIndex = 99999;
         c.style.borderRadius = "50%";
         document.body.appendChild(c);
 
-        let fall = setInterval(()=>{
+        let fall = setInterval(() => {
             let top = parseFloat(c.style.top);
             c.style.top = top + 5 + "px";
-
-            if(top > window.innerHeight){
+            if (top > window.innerHeight){
                 clearInterval(fall);
                 c.remove();
             }
@@ -454,34 +585,16 @@ function confetti(){
 }
 
 function clearCard(){
+    const card = document.getElementById("card");
+    card.classList.remove("flipped", "bad", "good");
     document.getElementById("front").innerText = "";
-    document.getElementById("back").innerText = "";
-
-    let img = document.getElementById("img");
-    img.style.display = "none";
-    img.src = "";
-
+    document.getElementById("back-def").innerText = "";
+    document.getElementById("imgFront").style.display = "none";
+    document.getElementById("imgBack").style.display = "none";
     document.getElementById("gradeButtons").style.display = "none";
 }
+
 </script>
-
-<!-- POPUP -->
-<div id="resultPopup" style="display:none;">
-    <div class="popupBox">
-        <div class="gradeBig" id="finalGrade">A</div>
-
-        <div class="popupStats">
-            Accuracy: <span id="finalAcc">0%</span><br>
-            Right: <span id="finalRight">0</span> |
-            Wrong: <span id="finalWrong">0</span> |
-            Total: <span id="finalTotal">0</span>
-        </div>
-
-        <button onclick="closePopup()" class="flip-btn" style="margin-top:15px;">
-            close
-        </button>
-    </div>
-</div>
 
 </body>
 </html>
