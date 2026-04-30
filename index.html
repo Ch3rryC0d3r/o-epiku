@@ -154,12 +154,7 @@ button {
     background: #1e9e55;
 }
 
-.top-left {
-    position: fixed;
-    top: 15px;
-    left: 15px;
-    z-index: 9999;
-}
+.top-left { position: fixed; top: 15px; left: 15px; z-index: 9999; }
 
 #resultPopup {
     position: fixed;
@@ -214,14 +209,93 @@ button {
     60%  { transform: rotateY(180deg) translateY(5px); }
     100% { transform: rotateY(180deg) translateY(0);     background: white; }
 }
+
+.modeSelect {
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 12px;
+}
+
+#controlStack {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 9999;
+}
+
+#changelogBtn {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 9999;
+}
+
+body.dark {
+    background: #121212;
+    color: #eee;
+}
+
+body.dark .card-face {
+    background: #1e1e1e;
+    color: #eee;
+}
+
+body.dark .popupBox {
+    background: #1e1e1e;
+    color: #eee;
+}
+
+body.dark button {
+    filter: brightness(0.9);
+}
+
+#streakUI {
+    position: absolute;
+    left: -80px;
+    top: 20px;
+    font-size: 22px;
+    font-weight: 800;
+}
 </style>
 </head>
 
 <body>
 
-<button id="startBtn" class="flip-btn top-left start-state" onclick="toggleSession()">start</button>
 
-<div class="card-scene">
+<div id="controlStack">
+    <button id="startBtn" class="flip-btn start-state" onclick="toggleSession()">start</button>
+
+    <button id="swapBtn" class="flip-btn">🔁</button>
+	
+	<button id="changelogBtn" class="flip-btn">🧾</button>
+	
+	<button id="darkToggle" class="flip-btn">🌙</button>
+
+    <div id="modePanel">
+        <div style="font-size:12px; opacity:0.7;">Front (→) Back</div>
+
+        <select id="frontMode" class="modeSelect">
+            <option value="tp">Toki Pona</option>
+            <option value="en">English</option>
+            <option value="tpns">Toki Pona (No Sitelen)</option>
+            <option value="enns">English (No Sitelen)</option>
+        </select>
+
+        <select id="backMode" class="modeSelect">
+            <option value="en">English</option>
+            <option value="tp">Toki Pona</option>
+            <option value="tpns">Toki Pona (No Sitelen)</option>
+            <option value="enns">English (No Sitelen)</option>
+        </select>
+    </div>
+</div>
+
+<div class="card-scene" style="position:relative;">
+    <div id="streakUI">0 🔥</div>
     <div class="card" id="card">
 
         <!-- FRONT: toki pona word + image -->
@@ -250,7 +324,34 @@ button {
     </div>
 </div>
 
-<!-- POPUP -->
+<div id="changelogPopup" style="display:none;">
+  <div class="popupBox">
+    <div class="gradeBig" style="font-size:28px;">Changelog</div>
+
+    <div style="text-align:left; font-size:14px; line-height:1.5; max-height:200px; overflow:auto;">
+	  <b>v1.0.4</b><br>
+	  - added leech detection<br>
+	  - added dark mode toggle 🌙<br>
+	  - added streak counter 🔥<br><br>
+	  
+      <b>v1.0.3</b><br>
+      - added flip button 🔁<br>
+      - fixed image logic for no-sitelen modes<br>
+      - blocked double grading spam<br>
+      - UI cleanup<br><br>
+
+      <b>v1.0.2</b><br>
+      - added SRS intervals<br>
+      - added grading system<br><br>
+
+      <b>v1.0.1</b><br>
+      - initial release
+    </div>
+
+    <button onclick="closeChangelog()" class="flip-btn" style="margin-top:15px;">close</button>
+  </div>
+</div>
+
 <div id="resultPopup" style="display:none;">
     <div class="popupBox">
         <div class="gradeBig" id="finalGrade">A</div>
@@ -266,119 +367,130 @@ button {
 
 <script>
 
+document.getElementById("swapBtn").addEventListener("click", () => {
+    const front = document.getElementById("frontMode");
+    const back = document.getElementById("backMode");
+
+    const temp = front.value;
+    front.value = back.value;
+    back.value = temp;
+
+    updateModeOptions();
+});
+
 /* =========================
    DECK
    ========================= */
 
 let deck = [
-{f:"akesi", b:"lizard, reptile", interval: 0, ease: 2.5, due: 0},
-{f:"ala", b:"no, not, nothing, zero", interval: 0, ease: 2.5, due: 0},
-{f:"alasa", b:"hunt, gather, search, try", interval: 0, ease: 2.5, due: 0},
-{f:"ale", b:"all, everything, infinite", interval: 0, ease: 2.5, due: 0},
-{f:"anpa", b:"down, low, below, defeat", interval: 0, ease: 2.5, due: 0},
-{f:"ante", b:"different, change, other", interval: 0, ease: 2.5, due: 0},
-{f:"awen", b:"stay, keep, wait, continue", interval: 0, ease: 2.5, due: 0},
-{f:"esun", b:"trade, buy/sell, exchange", interval: 0, ease: 2.5, due: 0},
-{f:"ijo", b:"thing, stuff", interval: 0, ease: 2.5, due: 0},
-{f:"ike", b:"bad, evil, unnecessary", interval: 0, ease: 2.5, due: 0},
-{f:"ilo", b:"tool, device", interval: 0, ease: 2.5, due: 0},
-{f:"insa", b:"inside, center", interval: 0, ease: 2.5, due: 0},
-{f:"jaki", b:"dirty, gross", interval: 0, ease: 2.5, due: 0},
-{f:"jan", b:"person, human", interval: 0, ease: 2.5, due: 0},
-{f:"jelo", b:"yellow", interval: 0, ease: 2.5, due: 0},
-{f:"jo", b:"have, hold", interval: 0, ease: 2.5, due: 0},
-{f:"kala", b:"fish, sea creature", interval: 0, ease: 2.5, due: 0},
-{f:"kalama", b:"sound, noise", interval: 0, ease: 2.5, due: 0},
-{f:"kama", b:"come, become, event", interval: 0, ease: 2.5, due: 0},
-{f:"kasi", b:"plant", interval: 0, ease: 2.5, due: 0},
-{f:"ken", b:"can, possible", interval: 0, ease: 2.5, due: 0},
-{f:"kepeken", b:"use, using", interval: 0, ease: 2.5, due: 0},
-{f:"kili", b:"fruit, vegetable, mushroom", interval: 0, ease: 2.5, due: 0},
-{f:"kiwen", b:"hard thing, rock, metal", interval: 0, ease: 2.5, due: 0},
-{f:"ko", b:"paste, powder", interval: 0, ease: 2.5, due: 0},
-{f:"kon", b:"air, spirit", interval: 0, ease: 2.5, due: 0},
-{f:"kule", b:"color", interval: 0, ease: 2.5, due: 0},
-{f:"kulupu", b:"group, community", interval: 0, ease: 2.5, due: 0},
-{f:"kute", b:"hear, listen", interval: 0, ease: 2.5, due: 0},
-{f:"lape", b:"sleep, rest", interval: 0, ease: 2.5, due: 0},
-{f:"laso", b:"blue, green", interval: 0, ease: 2.5, due: 0},
-{f:"lawa", b:"head, control, lead", interval: 0, ease: 2.5, due: 0},
-{f:"len", b:"clothes, cover", interval: 0, ease: 2.5, due: 0},
-{f:"lete", b:"cold", interval: 0, ease: 2.5, due: 0},
-{f:"lili", b:"small", interval: 0, ease: 2.5, due: 0},
-{f:"linja", b:"line, rope, hair", interval: 0, ease: 2.5, due: 0},
-{f:"lipu", b:"paper, book, page", interval: 0, ease: 2.5, due: 0},
-{f:"loje", b:"red", interval: 0, ease: 2.5, due: 0},
-{f:"lon", b:"real, exist, at/in/on", interval: 0, ease: 2.5, due: 0},
-{f:"luka", b:"hand, arm, five", interval: 0, ease: 2.5, due: 0},
-{f:"lukin", b:"see, look, read", interval: 0, ease: 2.5, due: 0},
-{f:"lupa", b:"hole, door", interval: 0, ease: 2.5, due: 0},
-{f:"ma", b:"land, place", interval: 0, ease: 2.5, due: 0},
-{f:"mama", b:"parent, creator", interval: 0, ease: 2.5, due: 0},
-{f:"mani", b:"money, livestock", interval: 0, ease: 2.5, due: 0},
-{f:"meli", b:"woman", interval: 0, ease: 2.5, due: 0},
-{f:"mi", b:"I, we", interval: 0, ease: 2.5, due: 0},
-{f:"mije", b:"man", interval: 0, ease: 2.5, due: 0},
-{f:"moku", b:"eat, food", interval: 0, ease: 2.5, due: 0},
-{f:"moli", b:"death, kill", interval: 0, ease: 2.5, due: 0},
-{f:"monsi", b:"back, behind", interval: 0, ease: 2.5, due: 0},
-{f:"mun", b:"moon, star", interval: 0, ease: 2.5, due: 0},
-{f:"musi", b:"fun, play, art", interval: 0, ease: 2.5, due: 0},
-{f:"mute", b:"many, a lot", interval: 0, ease: 2.5, due: 0},
-{f:"nanpa", b:"number", interval: 0, ease: 2.5, due: 0},
-{f:"nasa", b:"weird, drunk", interval: 0, ease: 2.5, due: 0},
-{f:"nasin", b:"way, path", interval: 0, ease: 2.5, due: 0},
-{f:"nena", b:"bump, hill, nose", interval: 0, ease: 2.5, due: 0},
-{f:"ni", b:"this, that", interval: 0, ease: 2.5, due: 0},
-{f:"nimi", b:"word, name", interval: 0, ease: 2.5, due: 0},
-{f:"noka", b:"leg, foot, bottom", interval: 0, ease: 2.5, due: 0},
-{f:"olin", b:"love", interval: 0, ease: 2.5, due: 0},
-{f:"ona", b:"they, it", interval: 0, ease: 2.5, due: 0},
-{f:"open", b:"start, open", interval: 0, ease: 2.5, due: 0},
-{f:"pakala", b:"break, mistake", interval: 0, ease: 2.5, due: 0},
-{f:"pali", b:"work, make", interval: 0, ease: 2.5, due: 0},
-{f:"palisa", b:"stick, long thing", interval: 0, ease: 2.5, due: 0},
-{f:"pan", b:"bread, grain", interval: 0, ease: 2.5, due: 0},
-{f:"pana", b:"give, send", interval: 0, ease: 2.5, due: 0},
-{f:"pilin", b:"feel, think", interval: 0, ease: 2.5, due: 0},
-{f:"pimeja", b:"black, dark", interval: 0, ease: 2.5, due: 0},
-{f:"pini", b:"end, finish", interval: 0, ease: 2.5, due: 0},
-{f:"pipi", b:"bug", interval: 0, ease: 2.5, due: 0},
-{f:"poka", b:"side, nearby", interval: 0, ease: 2.5, due: 0},
-{f:"poki", b:"container, box", interval: 0, ease: 2.5, due: 0},
-{f:"pona", b:"good, simple", interval: 0, ease: 2.5, due: 0},
-{f:"sama", b:"same, like", interval: 0, ease: 2.5, due: 0},
-{f:"seli", b:"heat", interval: 0, ease: 2.5, due: 0},
-{f:"selo", b:"outer layer, skin", interval: 0, ease: 2.5, due: 0},
-{f:"sewi", b:"above, sky", interval: 0, ease: 2.5, due: 0},
-{f:"sijelo", b:"body", interval: 0, ease: 2.5, due: 0},
-{f:"sike", b:"circle, cycle", interval: 0, ease: 2.5, due: 0},
-{f:"sin", b:"new, additional", interval: 0, ease: 2.5, due: 0},
-{f:"sina", b:"you", interval: 0, ease: 2.5, due: 0},
-{f:"sinpin", b:"front, face", interval: 0, ease: 2.5, due: 0},
-{f:"sitelen", b:"write, draw", interval: 0, ease: 2.5, due: 0},
-{f:"sona", b:"know", interval: 0, ease: 2.5, due: 0},
-{f:"soweli", b:"animal", interval: 0, ease: 2.5, due: 0},
-{f:"suli", b:"big", interval: 0, ease: 2.5, due: 0},
-{f:"suno", b:"sun, light", interval: 0, ease: 2.5, due: 0},
-{f:"supa", b:"surface", interval: 0, ease: 2.5, due: 0},
-{f:"suwi", b:"sweet, cute", interval: 0, ease: 2.5, due: 0},
-{f:"tan", b:"from, because", interval: 0, ease: 2.5, due: 0},
-{f:"tawa", b:"move, to", interval: 0, ease: 2.5, due: 0},
-{f:"telo", b:"water, liquid", interval: 0, ease: 2.5, due: 0},
-{f:"tenpo", b:"time", interval: 0, ease: 2.5, due: 0},
-{f:"toki", b:"speak, language", interval: 0, ease: 2.5, due: 0},
-{f:"tomo", b:"house, building", interval: 0, ease: 2.5, due: 0},
-{f:"tu", b:"two, divide", interval: 0, ease: 2.5, due: 0},
-{f:"unpa", b:"sex", interval: 0, ease: 2.5, due: 0},
-{f:"uta", b:"mouth", interval: 0, ease: 2.5, due: 0},
-{f:"utala", b:"fight", interval: 0, ease: 2.5, due: 0},
-{f:"walo", b:"white", interval: 0, ease: 2.5, due: 0},
-{f:"wan", b:"one, unite", interval: 0, ease: 2.5, due: 0},
-{f:"waso", b:"bird", interval: 0, ease: 2.5, due: 0},
-{f:"wawa", b:"strong, energy", interval: 0, ease: 2.5, due: 0},
-{f:"weka", b:"away, remove", interval: 0, ease: 2.5, due: 0},
-{f:"wile", b:"want, need"}
+{f:"akesi", b:"lizard, reptile", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"ala", b:"no, not, nothing, zero", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"alasa", b:"hunt, gather, search, try", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"ale", b:"all, everything, infinite", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"anpa", b:"down, low, below, defeat", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"ante", b:"different, change, other", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"awen", b:"stay, keep, wait, continue", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"esun", b:"trade, buy/sell, exchange", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"ijo", b:"thing, stuff", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"ike", b:"bad, evil, unnecessary", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"ilo", b:"tool, device", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"insa", b:"inside, center", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"jaki", b:"dirty, gross", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"jan", b:"person, human", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"jelo", b:"yellow", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"jo", b:"have, hold", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"kala", b:"fish, sea creature", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"kalama", b:"sound, noise", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"kama", b:"come, become, event", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"kasi", b:"plant", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"ken", b:"can, possible", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"kepeken", b:"use, using", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"kili", b:"fruit, vegetable, mushroom", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"kiwen", b:"hard thing, rock, metal", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"ko", b:"paste, powder", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"kon", b:"air, spirit", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"kule", b:"color", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"kulupu", b:"group, community", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"kute", b:"hear, listen", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"lape", b:"sleep, rest", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"laso", b:"blue, green", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"lawa", b:"head, control, lead", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"len", b:"clothes, cover", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"lete", b:"cold", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"lili", b:"small", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"linja", b:"line, rope, hair", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"lipu", b:"paper, book, page", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"loje", b:"red", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"lon", b:"real, exist, at/in/on", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"luka", b:"hand, arm, five", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"lukin", b:"see, look, read", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"lupa", b:"hole, door", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"ma", b:"land, place", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"mama", b:"parent, creator", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"mani", b:"money, livestock", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"meli", b:"woman", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"mi", b:"I, we", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"mije", b:"man", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"moku", b:"eat, food", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"moli", b:"death, kill", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"monsi", b:"back, behind", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"mun", b:"moon, star", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"musi", b:"fun, play, art", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"mute", b:"many, a lot", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"nanpa", b:"number", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"nasa", b:"weird, drunk", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"nasin", b:"way, path", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"nena", b:"bump, hill, nose", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"ni", b:"this, that", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"nimi", b:"word, name", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"noka", b:"leg, foot, bottom", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"olin", b:"love", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"ona", b:"they, it", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"open", b:"start, open", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"pakala", b:"break, mistake", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"pali", b:"work, make", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"palisa", b:"stick, long thing", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"pan", b:"bread, grain", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"pana", b:"give, send", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"pilin", b:"feel, think", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"pimeja", b:"black, dark", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"pini", b:"end, finish", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"pipi", b:"bug", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"poka", b:"side, nearby", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"poki", b:"container, box", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"pona", b:"good, simple", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"sama", b:"same, like", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"seli", b:"heat", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"selo", b:"outer layer, skin", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"sewi", b:"above, sky", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"sijelo", b:"body", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"sike", b:"circle, cycle", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"sin", b:"new, additional", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"sina", b:"you", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"sinpin", b:"front, face", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"sitelen", b:"write, draw", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"sona", b:"know", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"soweli", b:"animal", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"suli", b:"big", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"suno", b:"sun, light", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"supa", b:"surface", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"suwi", b:"sweet, cute", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"tan", b:"from, because", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"tawa", b:"move, to", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"telo", b:"water, liquid", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"tenpo", b:"time", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"toki", b:"speak, language", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"tomo", b:"house, building", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"tu", b:"two, divide", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"unpa", b:"sex", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"uta", b:"mouth", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"utala", b:"fight", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"walo", b:"white", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"wan", b:"one, unite", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"waso", b:"bird", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"wawa", b:"strong, energy", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"weka", b:"away, remove", interval: 0, ease: 2.5, due: 0, failCount: 0, leech: false},
+{f:"wile", b:"want, need", interval: 0, ease: 2.5, due: 0}
 ];
 
 /* =========================
@@ -387,18 +499,35 @@ let deck = [
 
 let current = null;
 let session = false;
+let frontMode = "tp";
+let backMode = "en";
 let right = 0;
 let wrong = 0;
 let total = 0;
+let graded = false;
+let modalOpen = false;
+let streak = 0;
 
 /* =========================
    SESSION
    ========================= */
+   
+const modeGroup = {
+    tp: "tp",
+    tpns: "tp",
+    en: "en",
+    enns: "en"
+};
 
 function toggleSession(){
     session = !session;
     let btn = document.getElementById("startBtn");
 	if (session){
+		document.getElementById("swapBtn").disabled = true;
+		document.getElementById("swapBtn").style.opacity = "0.4";
+		document.getElementById("modePanel").style.opacity = "0.4";
+		document.getElementById("frontMode").disabled = true;
+		document.getElementById("backMode").disabled = true;
 		btn.innerText = "stop";
 		btn.classList.remove("start-state");
 		btn.classList.add("stop-state");
@@ -408,6 +537,11 @@ function toggleSession(){
 		resetStats();
 		pick();
 	} else {
+		document.getElementById("swapBtn").disabled = false;
+		document.getElementById("swapBtn").style.opacity = "1";
+		document.getElementById("modePanel").style.opacity = "1";
+		document.getElementById("frontMode").disabled = false;
+		document.getElementById("backMode").disabled = false;
 		btn.innerText = "start";
 		btn.classList.remove("stop-state");
 		btn.classList.add("start-state");
@@ -458,7 +592,40 @@ function resetStats(){
    CARDS
    ========================= */
 
+function updateModeOptions(){
+    const front = document.getElementById("frontMode");
+    const back = document.getElementById("backMode");
+
+    const f = front.value;
+    const b = back.value;
+
+    const fg = modeGroup[f];
+    const bg = modeGroup[b];
+
+    for (let opt of front.options){
+        const og = modeGroup[opt.value];
+
+        // hide invalid: same raw OR same group
+        opt.hidden = (opt.value === b) || (og === bg);
+    }
+
+    for (let opt of back.options){
+        const og = modeGroup[opt.value];
+
+        opt.hidden = (opt.value === f) || (og === fg);
+    }
+
+    // auto-fix invalid selection if it happens
+    if (modeGroup[f] === modeGroup[b]){
+        back.value = "en";
+        front.value = "tp";
+    }
+}
+
 function pick(){
+	graded = false;
+	frontMode = document.getElementById("frontMode").value;
+	backMode = document.getElementById("backMode").value;
     if (!session) {
         clearCard();
         return;
@@ -467,6 +634,12 @@ function pick(){
     const now = Date.now();
 
     let dueCards = deck.filter(c => c.due <= now);
+
+	// boost leeches into pool
+	let leeches = deck.filter(c => c.leech);
+	if (leeches.length > 0 && Math.random() < 0.35) {
+		dueCards = dueCards.concat(leeches);
+	}
 
     if (dueCards.length === 0) {
         // nothing due -> force next soonest card
@@ -477,32 +650,63 @@ function pick(){
     render();
 }
 
+function getFrontText(){
+    if (frontMode === "tp") return current.f;
+    if (frontMode === "en") return current.b;
+    if (frontMode === "tpns") return current.f;
+    if (frontMode === "enns") return current.b;
+}
+
+function getBackText(){
+    const b = current.b;
+    const f = current.f;
+
+    if (backMode === "tp") return f;
+    if (backMode === "en") return b;
+    if (backMode === "tpns") return f;
+    if (backMode === "enns") return b;
+}
 function render(){
     if (!current) return;
+	
+	frontMode = document.getElementById("frontMode").value;
+	backMode = document.getElementById("backMode").value;
 
     const card = document.getElementById("card");
-    document.getElementById("back-def").innerText = "";
+    document.getElementById("back-def").innerText = getBackText();
 	document.getElementById("imgBack").style.display = "none";
 	document.getElementById("gradeButtons").style.display = "none";
 	card.classList.remove("flipped", "bad", "good");
 
-    document.getElementById("front").innerText = current.f;
+	document.getElementById("front").innerText = getFrontText();
 
-    const imgFront = document.getElementById("imgFront");
-    imgFront.src = "./index_files/" + current.f + ".png";
-    imgFront.style.display = "block";
+	const frontIsNoSitelen = (frontMode === "tpns" || frontMode === "enns");
+	const backIsNoSitelen  = (backMode === "tpns" || backMode === "enns");
 
-    document.getElementById("back-def").innerText = current.b;
+	// FRONT IMAGE
+	if (!frontIsNoSitelen) {
+		imgFront.src = "./index_files/" + current.f + ".png";
+		imgFront.style.display = "block";
+	} else {
+		imgFront.style.display = "none";
+	}
 
-    const imgBack = document.getElementById("imgBack");
-    imgBack.src = "./index_files/" + current.f + ".png";
-    imgBack.style.display = "block";
-
+	// BACK IMAGE
+	if (!backIsNoSitelen) {
+		imgBack.src = "./index_files/" + current.f + ".png";
+		imgBack.style.display = "block";
+	} else {
+		imgBack.style.display = "none";
+	}
+	
     document.getElementById("gradeButtons").style.display = "none";
+	
+	document.getElementById("streakUI").innerText = `${streak} 🔥`;
 }
 
 function flip(){
     if (!current) return;
+	document.querySelectorAll("#gradeButtons button").forEach(b => b.disabled = false);
     document.getElementById("card").classList.add("flipped");
     document.getElementById("gradeButtons").style.display = "flex";
 }
@@ -512,31 +716,43 @@ function flip(){
    ========================= */
 
 function grade(correct){
-    if (!current || !session) return;
+    if (!current || !session || graded) return;
+    graded = true;
+	
+	document.querySelectorAll("#gradeButtons button").forEach(b => b.disabled = true);
 
     const card = document.getElementById("card");
 
     const now = Date.now();
 
-    if (correct){
-        right++;
+	if (correct){
+		right++;
+		streak++;
 
         current.ease = Math.min(current.ease + 0.1, 3.0);
         current.interval = current.interval === 0 ? 1 : Math.round(current.interval * current.ease);
 
-        current.due = now + current.interval * 60 * 1000; // minutes for now (debug-friendly)
+        current.due = now + current.interval * 60 * 1000; // obvious ah comment was here, ppl gonna think i used an llm or som :sob:
 
         card.classList.remove("good");
         void card.offsetWidth;
         card.classList.add("good");
 
-    } else {
-        wrong++;
+	} else {
+		wrong++;
+		streak = 0;
 
-        current.ease = Math.max(current.ease - 0.2, 1.3);
-        current.interval = 0;
+		current.ease = Math.max(current.ease - 0.2, 1.3);
+		current.interval = 0;
 
-        current.due = now + 30 * 1000; // repeat soon (30 sec punishment loop)
+		current.failCount++;
+
+		if (current.failCount >= 3) {
+			current.leech = true;
+		}
+
+		let penalty = current.leech ? 2 * 60 * 1000 : 30 * 1000; // leech = harder punishment
+		current.due = now + penalty;
 
         card.classList.remove("bad");
         void card.offsetWidth;
@@ -559,6 +775,15 @@ document.addEventListener("keydown", e => {
 });
 
 pick();
+
+if (localStorage.getItem("darkMode") === "true") {
+    document.body.classList.add("dark");
+}
+
+document.getElementById("frontMode").addEventListener("change", updateModeOptions);
+document.getElementById("backMode").addEventListener("change", updateModeOptions);
+
+updateModeOptions();
 
 function confetti(){
     for(let i = 0; i < 30; i++){
@@ -594,6 +819,29 @@ function clearCard(){
     document.getElementById("gradeButtons").style.display = "none";
 }
 
+document.getElementById("changelogBtn").addEventListener("click", () => {
+    modalOpen = true;
+    document.getElementById("changelogPopup").style.display = "flex";
+    document.querySelector(".card-scene").style.opacity = "0.2";
+    document.querySelector(".card-scene").style.pointerEvents = "none";
+});
+
+function closeChangelog(){
+    modalOpen = false;
+    document.getElementById("changelogPopup").style.display = "none";
+    document.querySelector(".card-scene").style.opacity = "1";
+    document.querySelector(".card-scene").style.pointerEvents = "auto";
+}
+
+document.getElementById("darkToggle").addEventListener("click", () => {
+    document.body.classList.toggle("dark");
+
+    // optional persist
+    localStorage.setItem(
+        "darkMode",
+        document.body.classList.contains("dark")
+    );
+});
 </script>
 
 </body>
